@@ -66,7 +66,7 @@ if [ -z $api_password ]
     api_password="admin"
 fi
 
-echo "db_uid,db_name,memory_limit,memory_used,replication,shards_count" > $redis_filename
+echo "db_uid,db_name,memory_limit,memory_used,replication,shards_count,persistency" > $redis_filename
 
 # Json Parsing functions
 parse_bdbs_json_objects() {
@@ -75,15 +75,16 @@ parse_bdbs_json_objects() {
   local uid=$(jq -r '.uid' <<< "${json_object}")
   local db_name=$(jq -r '.name' <<< "${json_object}")
   local shards_count=$(jq -r '.shards_count' <<< "${json_object}")
+  local persistence=$(jq -r '.data_persistence' <<< "${json_object}")
   local replication=$(jq -r '.replication' <<< "${json_object}")
   local dbid="db:${uid}"
-  local memory_size_gb=$(awk "BEGIN {print \"%.3f\", $memory_size/1024/1024/1024}")
+  local memory_size_gb=$(awk "BEGIN {printf \"%.3f\", $memory_size/1024/1024/1024}")
   local bdbsstatsjson=$(curl -s -k -L -X GET -u "${api_username}:${api_password}" -H "Content-type:application/json" https://${redis_cluster_api_url}:9443/v1/bdbs/stats/last/$uid)
   local responsetoget=$(echo "${bdbsstatsjson}" | jq -c '.')
     while read -r rows; do
       local memory_used=$(jq -r '.used_memory' <<< "${rows}")
       local memory_used_gb=$(awk "BEGIN {printf \"%.3f\", $memory_used/1024/1024/1024}")
-      echo "$dbid,$db_name,$memory_size_gb,$memory_used_gb,$replication,$shards_count" >> $redis_filename
+      echo "$dbid,$db_name,$memory_size_gb,$memory_used_gb,$replication,$shards_count,$persistence" >> $redis_filename
     done <<< "$(echo "${responsetoget}" | jq -c '.[]')"
 }
 

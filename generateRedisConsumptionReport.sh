@@ -1,3 +1,4 @@
+#!/bin/bash
 Help()
 {
    # Display Help
